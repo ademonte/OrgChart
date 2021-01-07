@@ -450,17 +450,51 @@
       }
       return { 'exist': false, 'visible': false };
     },
+    getParent: function ($node) {
+      var parentTr = $node.closest('tr');
+
+      if(parentTr.hasClass("verticalNodes")){
+        var ulParent = $node.closest('ul').parent();
+        if(ulParent.is("li")){
+          return ulParent.children(':first');
+        } else {
+          return parentTr.parent().children(':first').find('.node');
+        }
+      } else {
+        return $node.closest('.nodes').parent().children(':first').find('.node');
+      }
+    },
+    getChildren: function ($node) {
+      var parentTr = $node.closest('tr');
+
+      if(parentTr.hasClass("verticalNodes")){
+        return $node.siblings('ul').children('li').children('.node')
+      } else if(parentTr.siblings('tr:first').hasClass("verticalNodes")) {
+        return $('td', parentTr.siblings('.verticalNodes')).children('ul').children('li').children('.node');
+      } else {
+        return $node.closest('tr').siblings('.nodes').children().find('.node:first');
+      }
+    },
+    getSiblings: function ($node) {
+      var parentTr = $node.closest('tr');
+
+      if(parentTr.hasClass("verticalNodes")){
+        return $node.parent().siblings('li').children('.node');
+      } else {
+        return $node.closest('table').parent().siblings().find('.node:first');
+      }
+    },
     // find the related nodes
     getRelatedNodes: function ($node, relation) {
       if (!$node || !($node instanceof $) || !$node.is('.node')) {
         return $();
       }
       if (relation === 'parent') {
-        return $node.closest('.nodes').parent().children(':first').find('.node');
+        return this.getParent($node);
       } else if (relation === 'children') {
-        return $node.closest('tr').siblings('.nodes').children().find('.node:first');
+        return this.getChildren($node);
       } else if (relation === 'siblings') {
-        return $node.closest('table').parent().siblings().find('.node:first');
+        return this.getSiblings($node);
       } else {
         return $();
       }
@@ -986,7 +1020,7 @@
         event.originalEvent.dataTransfer.dropEffect = 'none';
       } else {
         // default action for drag-and-drop of div is not to drop, so preventing default action for nodes which have allowedDrop class
-        //to fix drag and drop on IE and Edge		
+        //to fix drag and drop on IE and Edge
         event.preventDefault();
       }
     },
@@ -1004,7 +1038,7 @@
         this.$chart.triggerHandler({ 'type': 'otherdropped.orgchart', 'draggedItem': $dragged, 'dropZone': $dropZone });
         return;
       }
-      
+
       if (!$dropZone.hasClass('allowedDrop')) {
           // We are trying to drop a node into a node which isn't allowed
           // IE/Edge have a habit of allowing this, so we need our own double-check
